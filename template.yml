@@ -7,14 +7,39 @@ Resources:
       StageName: dev
       Cors:
         AllowOrigin: "'*'"
+        AllowHeaders: "'Content-Type'"
       DefinitionBody:
         swagger: 2.0
         info:
           title: Test Cors
           version: 1
+        x-amazon-apigateway-request-validators:
+          bodyValidate:
+            validateRequestBody: true
         definitions:
           empty:
             type: object
+          bodyDef:
+            type: object
+            properties:
+              action:
+                type: string
+                enum:
+                  - start
+                  - stop
+                  - beat
+              room:
+                type: integer
+            required:
+              - action
+              - room
+        x-amazon-apigateway-gateway-responses:
+          "BAD_REQUEST_BODY":
+            statusCode: "400"
+            responseParameters:
+              "gatewayresponse.header.Access-Control-Allow-Origin": "'*'"
+            responseTemplates:
+              application/json: "{\n  \"message\": $context.error.messageString\n}"
         paths:
           /test:
             post:
@@ -29,10 +54,23 @@ Resources:
                   headers:
                     Access-Control-Allow-Origin:
                       type: "string"
+                "400":
+                  schema:
+                    $ref: "#/definitions/Empty"
+                  headers:
+                    Access-Control-Allow-Origin:
+                      type: "string"
+              x-amazon-apigateway-request-validator: bodyValidate
+              parameters:
+                - name: body
+                  in: body
+                  required: true
+                  schema:
+                    $ref: '#/definitions/bodyDef'
               x-amazon-apigateway-integration:
                 responses:
                   default:
-                    statusCode: "200"
+                    statusCode: 200
                     responseParameters:
                       method.response.header.Access-Control-Allow-Origin: "'*'"
                     responseTemplates:
